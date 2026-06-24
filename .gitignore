@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.next/
+dist/
+coverage/
+generated/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Prisma
+backend/prisma/*.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build
+frontend/.next/
+backend/dist/

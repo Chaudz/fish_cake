@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+}
+
+enum ProductType {
+  RAW
+  COOKED
+}
+
+enum OrderStatus {
+  PENDING
+  SHIPPING
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PAID
+  DEBT
+  PARTIAL
+}
+
+enum CustomerSource {
+  FACEBOOK
+  TIKTOK
+  ZALO
+  WEBSITE
+  REFERRAL
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id                 String       @id @default(cuid())
+  name               String
+  phone              String
+  address            String?
+  type               CustomerType @default(RETAIL)
+  defaultRawPrice    Decimal      @default(0) @db.Decimal(12, 2)
+  defaultCookedPrice Decimal      @default(0) @db.Decimal(12, 2)
+  note               String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  orders             Order[]
+  debts              Debt[]
+
+  @@index([name])
+  @@index([phone])
+}
+
+model Product {
+  id        String      @id @default(cuid())
+  name      String
+  type      ProductType @unique
+  createdAt DateTime    @default(now())
+}
+
+model Purchase {
+  id          String      @id @default(cuid())
+  date        DateTime    @default(now())
+  productType ProductType
+  quantity    Decimal     @db.Decimal(12, 3)
+  costPrice   Decimal     @db.Decimal(12, 2)
+  totalAmount Decimal     @db.Decimal(12, 2)
+  note        String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([date])
+  @@index([productType])
+}
+
+model InventorySetting {
+  id                String      @id @default(cuid())
+  productType       ProductType @unique
+  lowStockThreshold Decimal     @default(10) @db.Decimal(12, 3)
+  defaultCostPrice  Decimal     @default(0) @db.Decimal(12, 2)
+  updatedAt         DateTime    @updatedAt
+}
+
+model Shipper {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  customerId    String
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  status        OrderStatus    @default(PENDING)
+  source        CustomerSource @default(OTHER)
+  shipperId     String?
+  shipper       Shipper?       @relation(fields: [shipperId], references: [id])
+  shippingFee   Decimal        @default(0) @db.Decimal(12, 2)
+  subtotal      Decimal        @default(0) @db.Decimal(12, 2)
+  totalAmount   Decimal        @default(0) @db.Decimal(12, 2)
+  paymentStatus PaymentStatus  @default(DEBT)
+  paidAmount    Decimal        @default(0) @db.Decimal(12, 2)
+  codAmount     Decimal        @default(0) @db.Decimal(12, 2)
+  codReconciled Boolean        @default(false)
+  note          String?
+  items         OrderItem[]
+  debt          Debt?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([source])
+}
+
+model OrderItem {
+  id          String      @id @default(cuid())
+  orderId     String
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productType ProductType
+  quantity    Decimal     @db.Decimal(12, 3)
+  unitPrice   Decimal     @db.Decimal(12, 2)
+  totalPrice  Decimal     @db.Decimal(12, 2)
+}
+
+model Debt {
+  id              String        @id @default(cuid())
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  orderId         String?       @unique
+  order           Order?        @relation(fields: [orderId], references: [id])
+  totalAmount     Decimal       @db.Decimal(12, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(12, 2)
+  remainingAmount Decimal       @db.Decimal(12, 2)
+  payments        DebtPayment[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([customerId])
+}
+
+model DebtPayment {
+  id          String   @id @default(cuid())
+  debtId      String
+  debt        Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(12, 2)
+  note        String?
+  paymentDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model SystemSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
