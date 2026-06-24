@@ -20,6 +20,7 @@ generated/
 
 # Prisma
 backend/prisma/*.db
+backend/node_modules/
 
 # Logs
 *.log
@@ -28,3 +29,6 @@ npm-debug.log*
 # Build
 frontend/.next/
 backend/dist/
+frontend/node_modules/
+
+
