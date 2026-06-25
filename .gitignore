@@ -26,9 +26,5 @@ backend/node_modules/
 *.log
 npm-debug.log*
 
-# Build
-frontend/.next/
-backend/dist/
-frontend/node_modules/
 
 
